@@ -32,12 +32,16 @@ class Settings(BaseSettings):
     qdrant_prefer_grpc: bool = False  # Set to True to use gRPC instead of HTTP
     
     # LLM Configuration
-    default_llm: str = "openai"
+    default_llm: str = "ollama"
     openai_model: str = "gpt-3.5-turbo"
     gemini_model: str = "gemini-pro"
     
+    # Ollama Configuration
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen2.5:7b-instruct"
+    
     # Cache Configuration
-    semantic_similarity_threshold: float = 0.85
+    semantic_similarity_threshold: float = 0.75  # Lowered for better semantic matching
     rag_similarity_threshold: float = 0.75
     cache_ttl: int = 3600
 

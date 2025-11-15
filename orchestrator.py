@@ -156,6 +156,11 @@ class CacheOrchestrator:
     
     def health_check(self) -> Dict:
         """Check health of all components"""
+        print("Checking health of all components")
+        print(self.layer0.health_check())
+        print(self.layer1.health_check())
+        print(self.layer2.health_check())
+        print(self.llm_manager.list_providers())
         return {
             "layer0_redis": self.layer0.health_check(),
             "layer1_qdrant": self.layer1.health_check(),

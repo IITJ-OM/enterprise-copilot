@@ -2,8 +2,8 @@ from typing import Optional, List, Dict, Any, Callable
 from abc import ABC, abstractmethod
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.schema import HumanMessage, SystemMessage
-from langchain.llms.base import LLM
+from langchain.messages import HumanMessage, SystemMessage
+from langchain.chat_models import BaseChatModel
 from langchain.chat_models.base import BaseChatModel
 import requests
 from config import settings
@@ -231,8 +231,10 @@ class LLMManager:
     """Manager class to handle multiple LLM providers"""
     
     def __init__(self):
+        print("Initializing LLM Manager")
         self.providers = {}
         self._initialize_providers()
+        print("LLM Manager initialized")
     
     def _initialize_providers(self):
         """Initialize available LLM providers based on configuration"""

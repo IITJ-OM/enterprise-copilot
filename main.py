@@ -63,6 +63,25 @@ async def startup_event():
     global orchestrator
     try:
         orchestrator = CacheOrchestrator()
+        
+        # Register Ollama provider if configured
+        try:
+            from langchain_community.chat_models import ChatOllama
+            from config import settings
+            
+            orchestrator.llm_manager.register_custom_provider(
+                provider_name="ollama",
+                llm_instance=ChatOllama(
+                    model=settings.ollama_model,
+                    base_url=settings.ollama_base_url
+                ),
+                model_name=f"Ollama ({settings.ollama_model})"
+            )
+        except ImportError:
+            print("langchain-community not installed. Ollama provider not available.")
+        except Exception as e:
+            print(f"Failed to initialize Ollama: {e}")
+        
         print("✓ Application started successfully")
     except Exception as e:
         print(f"✗ Failed to initialize orchestrator: {e}")
@@ -176,7 +195,7 @@ async def health_check():
     """Check health status of all components"""
     try:
         health_status = orchestrator.health_check()
-        
+        print(health_status)
         all_healthy = (
             health_status["layer0_redis"] and
             health_status["layer1_qdrant"] and
