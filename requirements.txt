@@ -1,19 +1,27 @@
-fastapi==0.104.1
-uvicorn==0.24.0
-langchain==0.1.0
-langchain-openai==0.0.2
-langchain-google-genai==0.0.5
-qdrant-client==1.7.0
-redis==5.0.1
-python-dotenv==1.0.0
-pydantic==2.5.2
-pydantic-settings==2.1.0
+# Core Web Framework
+fastapi>=0.104.1
+uvicorn>=0.24.0
+
+# LLM Integration
+langchain>=0.1.0
+langchain-core>=1.0.0
+langchain-openai>=0.0.2
+langchain-google-genai>=0.0.5
+langchain-community>=0.4.0
+langchain-text-splitters>=1.0.0
+
+# Vector Database & Cache
+qdrant-client>=1.7.1
+redis>=5.0.1
+
+# Embeddings & NLP
 sentence-transformers>=2.3.0
-tiktoken==0.5.2
-requests==2.31.0
+tiktoken>=0.5.2
 
-# Optional: Uncomment for custom LLM providers
-# langchain-community==0.0.10  # For Ollama, HuggingFace, etc.
-# transformers==4.35.2  # For HuggingFace models
-# torch==2.1.1  # For local models
+# Configuration & Data Validation
+pydantic>=2.5.2
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
 
+# Utilities
+requests>=2.31.0
