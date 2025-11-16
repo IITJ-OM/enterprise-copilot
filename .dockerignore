@@ -32,7 +32,7 @@ ENV/
 ARCHITECTURE.md
 PROJECT_SUMMARY.md
 README.md
-setup_guide.md
+SETUP_GUIDE.md
 
 # Tests
 test_*.py

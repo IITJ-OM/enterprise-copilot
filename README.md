@@ -13,8 +13,8 @@ Layer 0: Exact Cache (Redis)
     ↓ (if not found)
 Layer 1: Semantic Cache (Qdrant)
     ↓ (if not found)
-Layer 2: RAG/Document Cache (Qdrant)
-    ↓ (if not found)
+Layer 2: RAG/Document Cache to provide context to LLM (Qdrant)
+    ↓ (Call LLM with context)
 Call LLM (OpenAI/Gemini/Custom)
 ```
 
@@ -63,7 +63,7 @@ Call LLM (OpenAI/Gemini/Custom)
 ### 1. Clone the repository
 
 ```bash
-cd project_sde
+cd enterprise-copilot
 ```
 
 ### 2. Create virtual environment
@@ -91,20 +91,12 @@ pip install -r requirements.txt
 docker run -d --name redis-cache -p 6379:6379 redis:latest
 ```
 
-**Or install locally:**
-- Windows: Download from https://redis.io/download
-- Linux: `sudo apt-get install redis-server`
-- Mac: `brew install redis`
-
 ### 5. Set up Qdrant
 
 **Using Docker:**
 ```bash
 docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
 ```
-
-**Or install locally:**
-Follow instructions at https://qdrant.tech/documentation/quick-start/
 
 ### 6. Configure environment variables
 
@@ -553,7 +545,7 @@ For a more detailed, step‑by‑step production‑grade guide (including scalin
 
 ##  Performance Benefits
 
-- **Layer 0 (Redis)**: ~1-5ms response time
+- **Layer 0 (Redis)**: ~1-20ms response time
 - **Layer 1 (Semantic)**: ~10-50ms response time
 - **Layer 2 (RAG)**: ~100-500ms response time
 - **LLM Call**: ~1000-5000ms response time
