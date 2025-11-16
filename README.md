@@ -2,7 +2,7 @@
 
 A sophisticated multi-layer caching system with LLM integration, designed to optimize response times and reduce API costs through intelligent caching strategies.
 
-## 🏗️ Architecture
+## Architecture
 
 The application implements a hierarchical cache system with three layers:
 
@@ -35,21 +35,21 @@ Call LLM (OpenAI/Gemini/Custom)
    - Combines retrieved documents with LLM for accurate answers
    - Supports batch document ingestion
 
-## 🚀 Features
+## Features
 
-- ✅ Multi-layer caching with automatic fallback
-- ✅ Multi-LLM support (OpenAI GPT, Google Gemini)
-- ✅ **Custom LLM support** (Ollama, HuggingFace, custom APIs, local models)
-- ✅ Vector-based semantic search
-- ✅ RAG (Retrieval-Augmented Generation) capabilities
-- ✅ FastAPI REST API with interactive documentation
-- ✅ Configurable similarity thresholds
-- ✅ Health monitoring for all components
-- ✅ Cache management endpoints
-- ✅ Batch document operations
-- ✅ Dynamic provider registration/unregistration
+-  Multi-layer caching with automatic fallback
+-  Multi-LLM support (OpenAI GPT, Google Gemini)
+-  **Custom LLM support** (Ollama, HuggingFace, custom APIs, local models)
+-  Vector-based semantic search
+-  RAG (Retrieval-Augmented Generation) capabilities
+-  FastAPI REST API with interactive documentation
+-  Configurable similarity thresholds
+-  Health monitoring for all components
+-  Cache management endpoints
+-  Batch document operations
+-  Dynamic provider registration/unregistration
 
-## 📋 Prerequisites
+##  Prerequisites
 
 - Python 3.8+
 - Redis server
@@ -58,7 +58,7 @@ Call LLM (OpenAI/Gemini/Custom)
 - Google API key for Gemini (optional)
 - Custom LLM key (optional)
 
-## 🔧 Installation
+##  Installation
 
 ### 1. Clone the repository
 
@@ -140,7 +140,7 @@ CACHE_TTL=3600
 EMBEDDING_MODEL=all-MiniLM-L6-v2
 ```
 
-## 🎯 Usage
+##  Usage
 
 ### Start the application
 
@@ -155,7 +155,7 @@ The API will be available at `http://localhost:8000`
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 
-## 📡 API Endpoints
+##  API Endpoints
 
 ### 1. Process Query
 
@@ -255,7 +255,7 @@ GET /api/health
 GET /api/providers
 ```
 
-## 🔧 Custom LLM Support
+##  Custom LLM Support
 
 The application supports custom LLM providers in **three ways**:
 
@@ -308,7 +308,7 @@ orchestrator.llm_manager.register_custom_provider(
 
 **Examples:** Run `python example_custom_llm.py`
 
-## 💡 Example Usage
+##  Example Usage
 
 ### Python Client Example
 
@@ -353,7 +353,7 @@ curl -X POST "http://localhost:8000/api/documents" \
 curl -X DELETE "http://localhost:8000/api/cache?layer=0"
 ```
 
-## 🔍 How It Works
+##  How It Works
 
 1. **User submits a query** via the API
 2. **Layer 0 Check**: System checks Redis for exact match
@@ -367,7 +367,7 @@ curl -X DELETE "http://localhost:8000/api/cache?layer=0"
 5. **LLM Fallback**: If no cache hit, call LLM directly
    - Cache response in all layers
 
-## ⚙️ Configuration
+##  Configuration
 
 ### Cache Thresholds
 
@@ -408,7 +408,7 @@ curl -X POST "http://localhost:8000/api/query" \
   -d '{"query": "Can you explain Python programming language?"}'
 ```
 
-## 🌐 Kubernetes Deployment
+##  Kubernetes Deployment
 
 If you want to run Enterprise Copilot on a Kubernetes cluster (Minikube, Docker Desktop, or a managed cloud cluster), follow this high‑level workflow. For a deep dive, see `K8S_DEPLOYMENT.md`.
 
@@ -551,7 +551,7 @@ kubectl delete namespace iitj-sde
 
 For a more detailed, step‑by‑step production‑grade guide (including scaling, monitoring and optional in‑cluster Ollama), see `K8S_DEPLOYMENT.md`.
 
-## 📊 Performance Benefits
+##  Performance Benefits
 
 - **Layer 0 (Redis)**: ~1-5ms response time
 - **Layer 1 (Semantic)**: ~10-50ms response time
@@ -562,26 +562,6 @@ By caching responses, the system can reduce:
 - Response time by up to 99%
 - LLM API costs by 80-95%
 - Server load significantly
-
-## 🛠️ Troubleshooting
-
-### Redis Connection Error
-```
-Error: Could not connect to Redis
-```
-**Solution**: Ensure Redis is running on the configured host and port
-
-### Qdrant Connection Error
-```
-Error: Could not connect to Qdrant
-```
-**Solution**: Ensure Qdrant is running and accessible
-
-### LLM API Error
-```
-Error: OpenAI API key not configured
-```
-**Solution**: Add your API key to the `.env` file
 
 ## 📝 Project Structure
 
@@ -618,21 +598,24 @@ enterprise-copilot/
 └── PROJECT_SUMMARY.md              # Project summary and overview
 ```
 
-## 🚀 Advanced Features
+##  Troubleshooting
 
-### Custom Similarity Thresholds
-
-You can adjust thresholds per query (future enhancement):
-```python
-# In orchestrator.py, modify the get() methods to accept threshold parameter
+### Redis Connection Error
 ```
-
-### Custom Embeddings
-
-To use a different embedding model:
-```python
-# In config.py
-EMBEDDING_MODEL=sentence-transformers/all-mpnet-base-v2
+Error: Could not connect to Redis
 ```
+**Solution**: Ensure Redis is running on the configured host and port
+
+### Qdrant Connection Error
+```
+Error: Could not connect to Qdrant
+```
+**Solution**: Ensure Qdrant is running and accessible
+
+### LLM API Error
+```
+Error: OpenAI API key not configured
+```
+**Solution**: Add your API key to the `.env` file
 
 
