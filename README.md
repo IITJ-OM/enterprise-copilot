@@ -586,20 +586,36 @@ Error: OpenAI API key not configured
 ## 📝 Project Structure
 
 ```
-project_sde/
-├── cache/
+enterprise-copilot/
+├── cache/                          # Cache layer implementations
 │   ├── __init__.py
 │   ├── layer0_exact_cache.py      # Redis exact cache
 │   ├── layer1_semantic_cache.py   # Qdrant semantic cache
 │   └── layer2_rag_cache.py        # Qdrant RAG cache
-├── llm/
+├── llm/                            # LLM provider integrations
 │   ├── __init__.py
-│   └── llm_provider.py             # Multi-LLM support
-├── config.py                       # Configuration management
-├── orchestrator.py                 # Main cache orchestrator
-├── main.py                         # FastAPI application
+│   └── llm_provider.py            # Multi-LLM support (OpenAI, Gemini, Ollama)
+├── k8s/                            # Kubernetes deployment manifests
+│   ├── kubernetes-deployment.yaml # Main K8s deployment (Redis, Qdrant, FastAPI)
+│   ├── ollama-k8s-optional.yaml   # Optional in-cluster Ollama deployment
+├── config.py                       # Configuration management (env vars)
+├── orchestrator.py                 # Main cache orchestrator (query routing)
+├── main.py                         # FastAPI application entry point
+├── manage.py                       # Management scripts/utilities
 ├── requirements.txt                # Python dependencies
-└── README.md                       # Documentation
+├── Dockerfile                      # Docker image for FastAPI app
+├── docker-compose.yml              # Local development with Docker Compose
+├── .dockerignore                   # Docker build exclusions
+├── env.template                    # Environment variables template
+├── deploy-k8s.sh                   # Kubernetes deployment script
+├── cleanup-k8s.sh                  # Kubernetes cleanup script
+├── test_api.py                     # API endpoint tests
+├── test_cache_ops.py               # Cache operations tests
+├── README.md                       # Main documentation (this file)
+├── ARCHITECTURE.md                 # Architecture deep dive
+├── K8S_DEPLOYMENT.md               # Kubernetes deployment guide
+├── setup_guide.md                  # Setup and installation guide
+└── PROJECT_SUMMARY.md              # Project summary and overview
 ```
 
 ## 🚀 Advanced Features
