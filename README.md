@@ -1,6 +1,6 @@
 # Enterprise Copilot
 
-A sophisticated multi-layer caching system with LLM integration, designed to optimize response times and reduce API costs through intelligent caching strategies.
+A multi-layer caching system with LLM integration, designed to optimize response times and reduce API costs through intelligent caching strategies.
 
 ## Architecture
 
