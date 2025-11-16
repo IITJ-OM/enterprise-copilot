@@ -1,6 +1,18 @@
 # This Kubernetes configuration file was generated from a Docker Compose file.
 # It defines the resources to deploy Redis and Qdrant services.
 
+# --- Namespace ---
+# Create a dedicated namespace for the application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: iitj-sde
+  labels:
+    name: iitj-sde
+    app: enterprise-copilot
+
+---
+
 # --- Redis PersistentVolumeClaim ---
 # This creates a persistent volume claim for Redis data storage.
 # In a production environment, you would need a StorageClass and a PersistentVolume provisioner.
@@ -8,6 +20,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: redis-data-pvc
+  namespace: iitj-sde
 spec:
   accessModes:
     - ReadWriteOnce
@@ -23,6 +36,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: redis-deployment
+  namespace: iitj-sde
   labels:
     app: redis
 spec:
@@ -47,12 +61,24 @@ spec:
         volumeMounts:
         - name: redis-storage
           mountPath: /data
-        healthcheck:
-          test: ["CMD", "redis-cli", "ping"]
-          interval: 10s
-          timeout: 5s
-          retries: 5
-
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
       volumes:
       - name: redis-storage
         persistentVolumeClaim:
@@ -67,6 +93,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: redis-cache
+  namespace: iitj-sde
 spec:
   selector:
     app: redis
@@ -83,6 +110,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: qdrant-data-pvc
+  namespace: iitj-sde
 spec:
   accessModes:
     - ReadWriteOnce
@@ -98,6 +126,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: qdrant-deployment
+  namespace: iitj-sde
   labels:
     app: qdrant
 spec:
@@ -122,11 +151,22 @@ spec:
         env:
         - name: QDRANT__SERVICE__GRPC_PORT
           value: "6334"
-        healthcheck:
-          test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
-          interval: 10s
-          timeout: 5s
-          retries: 5
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 6333
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 6333
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
       volumes:
       - name: qdrant-storage
         persistentVolumeClaim:
@@ -140,6 +180,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: qdrant-vector-db
+  namespace: iitj-sde
 spec:
   selector:
     app: qdrant
@@ -152,3 +193,219 @@ spec:
       protocol: TCP
       port: 6334
       targetPort: 6334
+
+---
+
+# --- Ollama PersistentVolumeClaim ---
+# This creates a persistent volume claim for Ollama models storage.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-data-pvc
+  namespace: iitj-sde
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi  # Ollama models can be large
+
+---
+
+# --- Ollama Deployment ---
+# This deployment manages the Ollama LLM service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama-deployment
+  namespace: iitj-sde
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+      - name: ollama
+        image: ollama/ollama:latest
+        ports:
+        - containerPort: 11434
+        volumeMounts:
+        - name: ollama-storage
+          mountPath: /root/.ollama
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        # Pull model on startup
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  sleep 10
+                  ollama pull qwen2.5:7b-instruct
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 11434
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 11434
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: ollama-storage
+        persistentVolumeClaim:
+          claimName: ollama-data-pvc
+
+---
+
+# --- Ollama Service ---
+# This service exposes the Ollama API within the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-service
+  namespace: iitj-sde
+spec:
+  selector:
+    app: ollama
+  ports:
+    - protocol: TCP
+      port: 11434
+      targetPort: 11434
+
+---
+
+# --- ConfigMap for Application Environment Variables ---
+# This ConfigMap stores configuration for the FastAPI application.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: iitj-sde
+data:
+  REDIS_HOST: "redis-cache"
+  REDIS_PORT: "6379"
+  QDRANT_HOST: "qdrant-vector-db"
+  QDRANT_PORT: "6333"
+  DEFAULT_LLM: "ollama"
+  OLLAMA_BASE_URL: "http://ollama-service:11434"
+  OLLAMA_MODEL: "qwen2.5:7b-instruct"
+  SEMANTIC_SIMILARITY_THRESHOLD: "0.75"
+  RAG_SIMILARITY_THRESHOLD: "0.75"
+  DEBUG: "false"
+
+---
+
+# --- Secret for API Keys ---
+# Store sensitive information like API keys.
+# Create this secret manually or using kubectl:
+# kubectl create secret generic app-secrets \
+#   --from-literal=OPENAI_API_KEY=your-key \
+#   --from-literal=GOOGLE_API_KEY=your-key
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: iitj-sde
+type: Opaque
+data:
+  # Base64 encoded values - replace these with your actual keys
+  # Example: echo -n 'your-key' | base64
+  OPENAI_API_KEY: ""  # Add your base64 encoded key
+  GOOGLE_API_KEY: ""  # Add your base64 encoded key
+
+---
+
+# --- FastAPI Application Deployment ---
+# This deployment manages the FastAPI application pods.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: enterprise-copilot-deployment
+  namespace: iitj-sde
+  labels:
+    app: enterprise-copilot
+spec:
+  replicas: 2  # Run 2 replicas for high availability
+  selector:
+    matchLabels:
+      app: enterprise-copilot
+  template:
+    metadata:
+      labels:
+        app: enterprise-copilot
+    spec:
+      containers:
+      - name: enterprise-copilot
+        image: pbajpai21/iitj-pbajpai:enterprise-copilot  # Replace with your actual image
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: app-config
+        - secretRef:
+            name: app-secrets
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "2Gi"
+            cpu: "2000m"
+
+---
+
+# --- FastAPI Application Service ---
+# This service exposes the FastAPI application.
+# Type: LoadBalancer will create an external load balancer (cloud providers)
+# Type: NodePort will expose on a static port on each node
+# Type: ClusterIP will only expose internally
+apiVersion: v1
+kind: Service
+metadata:
+  name: enterprise-copilot-service
+  namespace: iitj-sde
+spec:
+  type: LoadBalancer  # Change to NodePort or ClusterIP as needed
+  selector:
+    app: enterprise-copilot
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      # nodePort: 30080  # Uncomment if using NodePort
