@@ -1,4 +1,4 @@
-# Agentic Cache-Driven Application
+# Enterprise Copilot
 
 A sophisticated multi-layer caching system with LLM integration, designed to optimize response times and reduce API costs through intelligent caching strategies.
 
@@ -15,7 +15,7 @@ Layer 1: Semantic Cache (Qdrant)
     ↓ (if not found)
 Layer 2: RAG/Document Cache (Qdrant)
     ↓ (if not found)
-Call LLM (OpenAI/Gemini)
+Call LLM (OpenAI/Gemini/Custom)
 ```
 
 ### Cache Layers
@@ -56,6 +56,7 @@ Call LLM (OpenAI/Gemini)
 - Qdrant vector database
 - OpenAI API key (optional)
 - Google API key for Gemini (optional)
+- Custom LLM key (optional)
 
 ## 🔧 Installation
 
@@ -407,6 +408,149 @@ curl -X POST "http://localhost:8000/api/query" \
   -d '{"query": "Can you explain Python programming language?"}'
 ```
 
+## 🌐 Kubernetes Deployment
+
+If you want to run Enterprise Copilot on a Kubernetes cluster (Minikube, Docker Desktop, or a managed cloud cluster), follow this high‑level workflow. For a deep dive, see `K8S_DEPLOYMENT.md`.
+
+### Prerequisites (Kubernetes)
+
+- **Kubernetes cluster**: Minikube, Docker Desktop, GKE, EKS, or AKS
+- **kubectl**: Configured to talk to your cluster
+- **Docker**: Installed and logged in to your registry (Docker Hub, etc.)
+- **Ollama (recommended)**: Running on your host with the `qwen2.5:7b-instruct` model  
+  - Or, alternatively, valid **OpenAI/Gemini API keys**
+
+The Kubernetes manifests assume:
+
+- **Namespace**: `iitj-sde`
+- **Redis service**: `redis-cache` on port `6379`
+- **Qdrant service**: `qdrant-vector-db` on ports `6333` (HTTP) and `6334` (gRPC)
+- **App service**: `enterprise-copilot-service` on port `8000` (type `LoadBalancer` by default)
+
+### Option 1 – Deploy using the script (recommended for local dev)
+
+From the project root:
+
+```bash
+# (Optional) set API keys if you want to use OpenAI/Gemini instead of Ollama
+export OPENAI_API_KEY="your-openai-key"
+export GOOGLE_API_KEY="your-google-key"
+
+chmod +x deploy-k8s.sh
+./deploy-k8s.sh
+```
+
+The script will:
+
+- **Build** the Docker image (`enterprise-copilot:latest`)
+- **Tag & push** it to `pbajpai21/iitj-pbajpai:enterprise-copilot`
+- **Apply** `k8s/kubernetes-deployment.yaml`
+- **Create/patch** the `app-secrets` secret (if `OPENAI_API_KEY` is set)
+- **Wait** for Redis, Qdrant, and the app deployment to become ready
+
+### Option 2 – Manual deployment
+
+If you prefer to deploy manually:
+
+```bash
+# 1. Build the image locally
+docker build -t enterprise-copilot:latest .
+
+# 2. (Optional) tag & push to your own registry
+docker tag enterprise-copilot:latest your-registry/enterprise-copilot:v1.0.0
+docker push your-registry/enterprise-copilot:v1.0.0
+```
+
+Update the `image` field in `k8s/kubernetes-deployment.yaml` if you push to your own registry:
+
+```yaml
+spec:
+  template:
+    spec:
+      containers:
+        - name: enterprise-copilot
+          image: your-registry/enterprise-copilot:v1.0.0
+```
+
+Create the namespace and deploy all resources:
+
+```bash
+# 3. Apply all Kubernetes resources (namespace, Redis, Qdrant, app, services, config)
+kubectl apply -f k8s/kubernetes-deployment.yaml
+```
+
+(Optional) create secrets from your API keys instead of the empty placeholders in the YAML:
+
+```bash
+kubectl create secret generic app-secrets \
+  --namespace=iitj-sde \
+  --from-literal=OPENAI_API_KEY="your-openai-key" \
+  --from-literal=GOOGLE_API_KEY="your-google-key"
+```
+
+### Accessing the application on Kubernetes
+
+- **Port‑forward (local cluster)**:
+
+  ```bash
+  kubectl port-forward service/enterprise-copilot-service 8000:8000 -n iitj-sde
+  # Then open http://localhost:8000
+  ```
+
+- **LoadBalancer (cloud cluster)**:
+
+  ```bash
+  kubectl get service enterprise-copilot-service -n iitj-sde
+  # Wait for EXTERNAL-IP, then open http://<EXTERNAL-IP>:8000
+  ```
+
+- **NodePort (if you change the service type)**:
+
+  ```bash
+  kubectl get nodes -o wide
+  kubectl get service enterprise-copilot-service -n iitj-sde
+  # Then open http://<NODE-IP>:<NODE-PORT>
+  ```
+
+### Updating configuration & secrets
+
+- **ConfigMap** values (e.g., `SEMANTIC_SIMILARITY_THRESHOLD`, `OLLAMA_BASE_URL`, `OLLAMA_MODEL`) are defined in `k8s/kubernetes-deployment.yaml` under the `app-config` `ConfigMap`.  
+- After changing them, re‑apply and restart the deployment:
+
+  ```bash
+  kubectl apply -f k8s/kubernetes-deployment.yaml
+  kubectl rollout restart deployment/enterprise-copilot-deployment -n iitj-sde
+  ```
+
+To rotate API keys while keeping the same secret name:
+
+```bash
+kubectl create secret generic app-secrets \
+  --namespace=iitj-sde \
+  --from-literal=OPENAI_API_KEY="new-openai-key" \
+  --from-literal=GOOGLE_API_KEY="new-google-key" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+kubectl rollout restart deployment/enterprise-copilot-deployment -n iitj-sde
+```
+
+### Cleanup
+
+To remove everything created in the `iitj-sde` namespace:
+
+```bash
+chmod +x cleanup-k8s.sh
+./cleanup-k8s.sh
+```
+
+Or manually:
+
+```bash
+kubectl delete namespace iitj-sde
+```
+
+For a more detailed, step‑by‑step production‑grade guide (including scaling, monitoring and optional in‑cluster Ollama), see `K8S_DEPLOYMENT.md`.
+
 ## 📊 Performance Benefits
 
 - **Layer 0 (Redis)**: ~1-5ms response time
@@ -475,19 +619,4 @@ To use a different embedding model:
 EMBEDDING_MODEL=sentence-transformers/all-mpnet-base-v2
 ```
 
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## 📄 License
-
-This project is licensed under the MIT License.
-
-## 🙋 Support
-
-For issues and questions, please create an issue in the repository.
-
----
-
-Built with ❤️ using FastAPI, Langchain, Qdrant, and Redis
 
