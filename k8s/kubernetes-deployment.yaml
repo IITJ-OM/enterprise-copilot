@@ -16,7 +16,6 @@ spec:
       storage: 1Gi
 
 ---
-
 # --- Redis Deployment ---
 # This deployment manages the Redis pods. It ensures that one replica of the Redis container is always running.
 apiVersion: apps/v1
