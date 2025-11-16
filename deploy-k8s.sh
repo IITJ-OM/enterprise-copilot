@@ -9,7 +9,7 @@ echo "🚀 Enterprise Copilot Kubernetes Deployment"
 echo "==========================================="
 echo ""
 echo "📋 Prerequisites:"
-echo "  ✓ Ollama must be running on your local machine"
+echo "  ✓ Ollama must be running on your local machine otherwise provide OPENAI_API_KEY"
 echo "  ✓ Model qwen2.5:7b-instruct should be available (check: ollama list)"
 echo "  ✓ Minikube running with Docker driver"
 echo ""
@@ -49,7 +49,7 @@ echo ""
 echo "Step 4: Waiting for deployments to be ready in namespace iitj-sde..."
 kubectl wait --for=condition=available --timeout=300s deployment/redis-deployment -n iitj-sde
 kubectl wait --for=condition=available --timeout=300s deployment/qdrant-deployment -n iitj-sde
-echo "ℹ️  Using host Ollama (not deploying Ollama in cluster)"
+echo "Using host Ollama (not deploying Ollama in cluster)"
 kubectl wait --for=condition=available --timeout=300s deployment/enterprise-copilot-deployment -n iitj-sde
 
 # Step 5: Get service info

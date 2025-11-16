@@ -1,0 +1,110 @@
+# ============================================================
+# OPTIONAL: Ollama Kubernetes Resources
+# ============================================================
+# Use these resources if you want to deploy Ollama INSIDE Kubernetes
+# instead of using the host machine's Ollama.
+#
+# To enable:
+# 1. Apply this file: kubectl apply -f ollama-k8s-optional.yaml
+# 2. Update OLLAMA_BASE_URL in kubernetes-deployment.yaml ConfigMap to:
+#    OLLAMA_BASE_URL: "http://ollama-service:11434"
+# 3. Redeploy the application
+# ============================================================
+
+---
+
+# --- Ollama PersistentVolumeClaim ---
+# This creates a persistent volume claim for Ollama models storage.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ollama-data-pvc
+  namespace: iitj-sde
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi  # Ollama models can be large
+
+---
+
+# --- Ollama Deployment ---
+# This deployment manages the Ollama LLM service.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ollama-deployment
+  namespace: iitj-sde
+  labels:
+    app: ollama
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ollama
+  template:
+    metadata:
+      labels:
+        app: ollama
+    spec:
+      containers:
+      - name: ollama
+        image: ollama/ollama:latest
+        ports:
+        - containerPort: 11434
+        volumeMounts:
+        - name: ollama-storage
+          mountPath: /root/.ollama
+        resources:
+          requests:
+            memory: "4Gi"
+            cpu: "2000m"
+          limits:
+            memory: "8Gi"
+            cpu: "4000m"
+        # Pull model on startup
+        lifecycle:
+          postStart:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  sleep 10
+                  ollama pull qwen2.5:7b-instruct
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 11434
+          initialDelaySeconds: 60
+          periodSeconds: 30
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 11434
+          initialDelaySeconds: 30
+          periodSeconds: 10
+      volumes:
+      - name: ollama-storage
+        persistentVolumeClaim:
+          claimName: ollama-data-pvc
+
+---
+
+# --- Ollama Service ---
+# This service exposes the Ollama API within the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: ollama-service
+  namespace: iitj-sde
+spec:
+  selector:
+    app: ollama
+  ports:
+    - protocol: TCP
+      port: 11434
+      targetPort: 11434
+

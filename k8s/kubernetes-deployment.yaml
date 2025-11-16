@@ -196,103 +196,6 @@ spec:
 
 ---
 
-# --- Ollama PersistentVolumeClaim ---
-# This creates a persistent volume claim for Ollama models storage.
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: ollama-data-pvc
-  namespace: iitj-sde
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 10Gi  # Ollama models can be large
-
----
-
-# --- Ollama Deployment ---
-# This deployment manages the Ollama LLM service.
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: ollama-deployment
-  namespace: iitj-sde
-  labels:
-    app: ollama
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: ollama
-  template:
-    metadata:
-      labels:
-        app: ollama
-    spec:
-      containers:
-      - name: ollama
-        image: ollama/ollama:latest
-        ports:
-        - containerPort: 11434
-        volumeMounts:
-        - name: ollama-storage
-          mountPath: /root/.ollama
-        resources:
-          requests:
-            memory: "4Gi"
-            cpu: "2000m"
-          limits:
-            memory: "8Gi"
-            cpu: "4000m"
-        # Pull model on startup
-        lifecycle:
-          postStart:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - |
-                  sleep 10
-                  ollama pull qwen2.5:7b-instruct
-        livenessProbe:
-          httpGet:
-            path: /
-            port: 11434
-          initialDelaySeconds: 60
-          periodSeconds: 30
-          timeoutSeconds: 10
-        readinessProbe:
-          httpGet:
-            path: /
-            port: 11434
-          initialDelaySeconds: 30
-          periodSeconds: 10
-      volumes:
-      - name: ollama-storage
-        persistentVolumeClaim:
-          claimName: ollama-data-pvc
-
----
-
-# --- Ollama Service ---
-# This service exposes the Ollama API within the cluster.
-apiVersion: v1
-kind: Service
-metadata:
-  name: ollama-service
-  namespace: iitj-sde
-spec:
-  selector:
-    app: ollama
-  ports:
-    - protocol: TCP
-      port: 11434
-      targetPort: 11434
-
----
-
 # --- ConfigMap for Application Environment Variables ---
 # This ConfigMap stores configuration for the FastAPI application.
 apiVersion: v1
@@ -306,7 +209,8 @@ data:
   QDRANT_HOST: "qdrant-vector-db"
   QDRANT_PORT: "6333"
   DEFAULT_LLM: "ollama"
-  OLLAMA_BASE_URL: "http://ollama-service:11434"
+  # Use host.docker.internal to reach Ollama running on host machine (Minikube Docker driver)
+  OLLAMA_BASE_URL: "http://host.docker.internal:11434"
   OLLAMA_MODEL: "qwen2.5:7b-instruct"
   SEMANTIC_SIMILARITY_THRESHOLD: "0.75"
   RAG_SIMILARITY_THRESHOLD: "0.75"

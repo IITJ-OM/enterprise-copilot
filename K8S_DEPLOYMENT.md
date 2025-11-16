@@ -5,7 +5,43 @@
 - Kubernetes cluster (Minikube, Docker Desktop, GKE, EKS, AKS, etc.)
 - kubectl configured
 - Docker installed
+- **Ollama running on your local machine** (with `qwen2.5:7b-instruct` model)
 - API keys (optional, for OpenAI/Gemini)
+
+## Ollama Configuration
+
+**Current Setup: Using Host Machine Ollama** 🏠
+
+The application is configured to connect to Ollama running on your **host machine** (not in Kubernetes). This setup:
+- ✅ Saves 4-8GB memory in your cluster
+- ✅ Faster deployment (no model download)
+- ✅ Uses your existing Ollama installation
+- ⚠️ Requires Ollama to be running on host
+
+**Before deploying, ensure:**
+```bash
+# 1. Ollama is running
+curl http://localhost:11434
+# Should return: "Ollama is running"
+
+# 2. Model is available
+ollama list | grep qwen2.5:7b-instruct
+```
+
+**Connection Details:**
+- Minikube with Docker driver uses: `http://host.docker.internal:11434`
+- Configured in `ConfigMap` → `OLLAMA_BASE_URL`
+
+**To deploy Ollama in Kubernetes instead:**
+1. Apply the optional Ollama resources:
+   ```bash
+   kubectl apply -f k8s/ollama-k8s-optional.yaml
+   ```
+2. Update `OLLAMA_BASE_URL` in `k8s/kubernetes-deployment.yaml`:
+   ```yaml
+   OLLAMA_BASE_URL: "http://ollama-service:11434"
+   ```
+3. Redeploy the application
 
 ## Quick Start
 
