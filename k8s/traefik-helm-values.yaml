@@ -1,0 +1,59 @@
+# Values file to install Traefik via Helm as the ingress controller / API gateway
+# Usage:
+#   helm repo add traefik https://traefik.github.io/charts
+#   helm repo update
+#   helm install traefik traefik/traefik \
+#     --namespace traefik --create-namespace \
+#     -f k8s/traefik-helm-values.yaml
+
+deployment:
+  replicas: 2
+
+service:
+  # Expose Traefik externally via a cloud LoadBalancer
+  type: LoadBalancer
+
+ingressClass:
+  enabled: true
+  isDefaultClass: false
+  name: traefik
+
+ports:
+  web:
+    # HTTP, will be redirected to HTTPS
+    port: 80
+    expose: true
+    protocol: TCP
+    redirectTo: websecure
+  websecure:
+    port: 443
+    expose: true
+    protocol: TCP
+    tls:
+      enabled: true
+
+providers:
+  kubernetesIngress:
+    enabled: true
+    publishedService:
+      enabled: true
+
+# Optional: Enable Traefik's built-in ACME/Let's Encrypt support.
+# If you prefer cert-manager, leave this section commented out.
+#certificatesResolvers:
+#  letsencrypt:
+#    acme:
+#      email: you@example.com
+#      storage: /data/acme.json
+#      httpChallenge:
+#        entryPoint: web
+#
+#additionalArguments:
+#  - "--certificatesresolvers.letsencrypt.acme.tlschallenge=true"
+#
+#persistence:
+#  enabled: true
+#  path: /data
+#  size: 1Gi
+
+
