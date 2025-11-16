@@ -584,10 +584,8 @@ enterprise-copilot/
 ├── test_api.py                     # API endpoint tests
 ├── test_cache_ops.py               # Cache operations tests
 ├── README.md                       # Main documentation (this file)
-├── ARCHITECTURE.md                 # Architecture deep dive
 ├── K8S_DEPLOYMENT.md               # Kubernetes deployment guide
-├── setup_guide.md                  # Setup and installation guide
-└── PROJECT_SUMMARY.md              # Project summary and overview
+└── SETUP_GUIDE.md                  # Setup and installation guide
 ```
 
 ##  Troubleshooting
